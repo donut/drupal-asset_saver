@@ -1,0 +1,5 @@
+name = Remote Asset Saver
+description = Saves remote CSS and JS files so that they may be served locally and aggregated with the rest of the assets.
+package = Caching
+core = 7.x
+version = 7.x-1.0
