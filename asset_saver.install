@@ -1,0 +1,12 @@
+<?php
+
+/**
+ * Delete the asset file caches when the module is disabled. @see hook_disable()
+ *
+ * @author Donovan Mueller <zotobi@gmail.com>
+ **/
+function asset_saver_disable()
+{
+  require_once 'asset_saver.module';
+  _asset_saver_rmdir(ASSET_SAVER_URI_PREFIX);
+}
