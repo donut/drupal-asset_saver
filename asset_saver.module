@@ -35,7 +35,7 @@ function asset_saver_url_to_file($url)
 
   # Prepare the directory.
   $dir_is_ready = file_prepare_directory(
-    dirname($uri), FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS
+    drupal_dirname($uri), FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS
   );
   if (!$dir_is_ready) return false;
 
