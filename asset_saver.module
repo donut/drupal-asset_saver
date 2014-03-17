@@ -27,6 +27,12 @@ function asset_saver_url_to_file($url)
     return (file_exists($filename)) ? $path : false;
       # The old file is better than no file.
 
+  # Uncompress if needed.
+  $headers = get_headers($url, true);
+  if (isset($headers['Content-Encoding'])
+  and $headers['Content-Encoding'] === 'gzip')
+    $contents = _asset_saver_gzdecode($contents);
+
   # Prepare the directory.
   $dir_is_ready = file_prepare_directory(
     dirname($uri), FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS
@@ -68,4 +74,30 @@ function asset_saver_url_to_file_uri($url)
     $uri .= '.js';
 
   return "public://" . ASSET_SAVER_URI_PREFIX . "/$uri";
+}
+
+/**
+ * A workaround for PHP versions without `gzdecode()`.
+ *
+ * Taken from PartySoft's comment on this answer:
+ * http://stackoverflow.com/a/3002691/134014
+ *
+ * @param string $data
+ *   The GZIP compressed string.
+ * @return The uncompressed string.
+ */
+function _asset_saver_gzdecode($data)
+{
+  if (function_exists('gzdecode'))
+    return gzdecode($data);
+
+  $file = tempnam('/tmp', 'asset_saver_');
+  file_put_contents($file, $data);
+
+  ob_start();
+  readgzfile($file);
+  $data = ob_get_clean();
+
+  unlink($file);
+  return $data;
 }
