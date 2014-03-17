@@ -1,6 +1,6 @@
 <?php
 
-const ASSET_SAVER_URI_PREFIX = 'asset_saver'
+const ASSET_SAVER_URI_PREFIX = 'public://asset_saver'
     , ASSET_SAVER_MAX_AGE    = 86500; # 1 day
 
 /**
@@ -13,6 +13,8 @@ const ASSET_SAVER_URI_PREFIX = 'asset_saver'
  **/
 function asset_saver_url_to_file($url)
 {
+  _asset_saver_clear_cache_maybe();
+
   $uri      = asset_saver_url_to_file_uri($url);
   $filename = drupal_realpath($uri);
 
@@ -73,8 +75,35 @@ function asset_saver_url_to_file_uri($url)
     # Hint to the webserver to serve these with the correct mime type.
     $uri .= '.js';
 
-  return "public://" . ASSET_SAVER_URI_PREFIX . "/$uri";
+  return ASSET_SAVER_URI_PREFIX . "/$uri";
 }
+
+
+/**
+ * Clear delete all the cached files if necessary.
+ *
+ * I couldn't find a hook that runs whenever caches are cleared. As a work
+ * around this detects whether or not the caches have been cleared and performs
+ * the necessary actions.
+ *
+ * @author Donovan Mueller <zotobi@gmail.com>
+ **/
+function _asset_saver_clear_cache_maybe()
+{
+  static $cache_id        = 'asset_saver.cache_hasnt_cleared'
+       , $already_checked = false;
+
+  if ($already_checked) return;
+  $already_checked = true;
+
+  $hasnt_cleared = cache_get($cache_id);
+  if ($hasnt_cleared) return;
+
+  _asset_saver_rmdir(ASSET_SAVER_URI_PREFIX);
+
+  cache_set($cache_id, true);
+}
+
 
 /**
  * A workaround for PHP versions without `gzdecode()`.
@@ -100,4 +129,32 @@ function _asset_saver_gzdecode($data)
 
   unlink($file);
   return $data;
+}
+
+
+/**
+ * An alternative to Drupal's `drupal_rmdir()` that can handle non-empty
+ * directories.
+ *
+ * Adapted from http://stackoverflow.com/a/1334425/134014
+ *
+ * @param string $path
+ *   A file path or Drupal URI.
+ */
+function _asset_saver_rmdir($path)
+{
+    $path = drupal_realpath($path);
+
+    if (is_dir($path)) {
+      $files = array_diff(scandir($path), array('.', '..'));
+      foreach ($files as $file)
+        _asset_saver_rmdir(realpath($path) . '/' . $file);
+
+      return rmdir($path);
+    }
+
+    if (is_file($path))
+      return unlink($path);
+
+    return false;
 }
