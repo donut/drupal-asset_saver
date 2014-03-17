@@ -1,1 +1,71 @@
 <?php
+
+const ASSET_SAVER_URI_PREFIX = 'asset_saver'
+    , ASSET_SAVER_MAX_AGE    = 86500; # 1 day
+
+/**
+ * Saves a remote asset to a file and returns the path.
+ *
+ * @param string $url
+ *   The URL to the remote asset file.
+ * @return The path to the local file or `FALSE` on failure.
+ * @author Donovan Mueller <zotobi@gmail.com>
+ **/
+function asset_saver_url_to_file($url)
+{
+  $uri      = asset_saver_url_to_file_uri($url);
+  $filename = drupal_realpath($uri);
+
+  # Does the file already exist?
+  if ($filename and file_exists($filename)
+  and (time() - filemtime($filename)) < ASSET_SAVER_MAX_AGE)
+    return $uri;
+
+  ## Save the file
+  $contents = file_get_contents($url);
+  if ($contents === false)
+    return (file_exists($filename)) ? $path : false;
+      # The old file is better than no file.
+
+  # Prepare the directory.
+  $dir_is_ready = file_prepare_directory(
+    dirname($uri), FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS
+  );
+  if (!$dir_is_ready) return false;
+
+  # Write the file.
+  $path = file_unmanaged_save_data($contents, $uri, FILE_EXISTS_REPLACE);
+
+  return $path;
+}
+
+/**
+ * Takes a remote URL and converts it to a local file URI.
+ *
+ * @param string $url
+ *   The URL to the remote asset file.
+ * @return The local file URI on success, `FALSE` otherwise.
+ * @author Donovan Mueller <zotobi@gmail.com>
+ **/
+function asset_saver_url_to_file_uri($url)
+{
+  # Break URL into manageable pieces.
+  if (version_compare(PHP_VERSION, '5.4.7', '<') and strpos($url, '//') === 0)
+    # Fix for PHP < 5.4.7 `parse_url()` not handling URLs with their scheme
+    # ommitted.
+    $url = "https:$url";
+  $parts = parse_url($url);
+  if ($parts === false or !isset($parts['host'])) return false;
+
+  $uri = $parts['host'] . (isset($parts['path']) ? $parts['path'] : '/index');
+  if (isset($parts['query'])) {
+    if ($uri[strlen($uri)-1] !== '/') $uri .= '/';
+    $uri .= $parts['query'];
+  }
+  $uri = rtrim($uri, '/');
+  if (!preg_match('#\.js$#', $uri))
+    # Hint to the webserver to serve these with the correct mime type.
+    $uri .= '.js';
+
+  return "public://" . ASSET_SAVER_URI_PREFIX . "/$uri";
+}
