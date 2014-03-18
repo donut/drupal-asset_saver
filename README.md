@@ -1,7 +1,7 @@
 Asset Saver
 ===========
 
-A Drupal module that provides the ability to save remote JavaScript and CSS files locally so that they can be minified and aggregated using Drupal's aggregation feature.
+A Drupal 7 module that provides the ability to save remote JavaScript and CSS files locally so that they can be minified and aggregated using Drupal's aggregation feature.
 
 Usage
 -----
