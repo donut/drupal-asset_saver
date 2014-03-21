@@ -13,6 +13,11 @@ const ASSET_SAVER_URI_PREFIX = 'public://asset_saver'
  **/
 function asset_saver_url_to_file($url)
 {
+  if (strpos($url, '//') === 0) {
+    $protocol = !empty($_SERVER['HTTPS']) ? 'https' : 'http';
+    $url = "$protocol:$url";
+  }
+
   _asset_saver_clear_cache_maybe();
 
   $uri      = asset_saver_url_to_file_uri($url);
