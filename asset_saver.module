@@ -13,6 +13,11 @@ const ASSET_SAVER_URI_PREFIX = 'public://asset_saver'
  **/
 function asset_saver_url_to_file($url)
 {
+  if (strpos($url, '//') === 0) {
+    $protocol = !empty($_SERVER['HTTPS']) ? 'https' : 'http';
+    $url = "$protocol:$url";
+  }
+
   _asset_saver_clear_cache_maybe();
 
   $uri      = asset_saver_url_to_file_uri($url);
@@ -65,7 +70,11 @@ function asset_saver_url_to_file_uri($url)
   $parts = parse_url($url);
   if ($parts === false or !isset($parts['host'])) return false;
 
-  $uri = $parts['host'] . (isset($parts['path']) ? $parts['path'] : '/index');
+  if (empty($parts['scheme']))
+    $parts['scheme'] = !empty($_SERVER['HTTPS']) ? 'https' : 'http';
+
+  $uri = "{$parts['scheme']}/{$parts['host']}"
+       . (isset($parts['path']) ? $parts['path'] : '/index');
   if (isset($parts['query'])) {
     if ($uri[strlen($uri)-1] !== '/') $uri .= '/';
     $uri .= $parts['query'];
